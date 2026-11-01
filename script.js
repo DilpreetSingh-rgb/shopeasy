@@ -1,48 +1,13 @@
+// script.js
 
-const defaultProducts = [
-  {
-    id: 1,
-    name: "Wireless Headphones",
-    price: 1299,
-    category: "Electronics",
-    image: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=600",
-    description: "Comfortable wireless headphones."
-  },
-  {
-    id: 2,
-    name: "Classic T-Shirt",
-    price: 499,
-    category: "Clothing",
-    image: "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=600",
-    description: "A simple everyday T-shirt."
-  },
-  {
-    id: 3,
-    name: "Smart Watch",
-    price: 1999,
-    category: "Electronics",
-    image: "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=600",
-    description: "A stylish everyday smartwatch."
-  }
-];
+const db = window.supabaseClient;
 
-function readData(key, fallback) {
-  try {
-    const value = JSON.parse(localStorage.getItem(key));
-    return value ?? fallback;
-  } catch {
-    return fallback;
-  }
-}
-
-let products = readData("products", defaultProducts);
-let categories = readData("categories", [
-  "All", "Electronics", "Clothing"
-]);
-let store = readData("store", {
+let products = [];
+let categories = ["All"];
+let store = {
   name: "ShopEasy",
-  phone: "919999999999"
-});
+  phone: ""
+};
 
 let selectedCategory = "All";
 
@@ -51,7 +16,7 @@ const productGrid = document.getElementById("productGrid");
 const searchInput = document.getElementById("searchInput");
 
 function escapeHTML(value) {
-  return String(value).replace(/[&<>"']/g, character => ({
+  return String(value ?? "").replace(/[&<>"']/g, character => ({
     "&": "&amp;",
     "<": "&lt;",
     ">": "&gt;",
@@ -63,11 +28,14 @@ function escapeHTML(value) {
 function renderStoreInfo() {
   document.getElementById("storeName").textContent = store.name;
   document.getElementById("footerStoreName").textContent = store.name;
+
   document.getElementById("footerPhone").textContent =
-    "WhatsApp: +" + store.phone;
+    store.phone ? "WhatsApp: +" + store.phone : "Contact us on WhatsApp";
 
   document.getElementById("contactLink").href =
-    "https://wa.me/" + store.phone.replace(/\D/g, "");
+    store.phone
+      ? "https://wa.me/" + store.phone.replace(/\D/g, "")
+      : "#";
 }
 
 function renderCategories() {
@@ -75,8 +43,11 @@ function renderCategories() {
 
   categories.forEach(category => {
     const button = document.createElement("button");
-    button.className = "category-button" +
+
+    button.className =
+      "category-button" +
       (selectedCategory === category ? " active" : "");
+
     button.textContent = category;
 
     button.addEventListener("click", () => {
@@ -90,7 +61,7 @@ function renderCategories() {
 }
 
 function renderProducts() {
-  const search = searchInput.value.toLowerCase();
+  const search = searchInput.value.trim().toLowerCase();
 
   const filteredProducts = products.filter(product => {
     const categoryMatches =
@@ -116,13 +87,19 @@ function renderProducts() {
       `Hello! I want to order ${product.name} for ₹${product.price}.`
     );
 
+    const phone = store.phone.replace(/\D/g, "");
+
     const card = document.createElement("article");
     card.className = "product-card";
 
     card.innerHTML = `
-      <img src="${escapeHTML(product.image)}"
-           alt="${escapeHTML(product.name)}"
-           onerror="this.style.display='none'">
+      ${
+        product.image_url
+          ? `<img src="${escapeHTML(product.image_url)}"
+                  alt="${escapeHTML(product.name)}"
+                  onerror="this.style.display='none'">`
+          : ""
+      }
 
       <h3>${escapeHTML(product.name)}</h3>
 
@@ -135,8 +112,9 @@ function renderProducts() {
       </p>
 
       <a class="order-button"
-         href="https://wa.me/${store.phone.replace(/\D/g, "")}?text=${message}"
-         target="_blank" rel="noopener">
+         href="${phone ? `https://wa.me/${phone}?text=${message}` : "#"}"
+         target="_blank"
+         rel="noopener">
         Order on WhatsApp
       </a>
     `;
@@ -145,8 +123,60 @@ function renderProducts() {
   });
 }
 
+async function loadStore() {
+  try {
+    // Load active products
+    const { data: productData, error: productError } = await db
+      .from("products")
+      .select("*")
+      .eq("is_active", true)
+      .order("created_at", { ascending: false });
+
+    if (productError) throw productError;
+
+    products = productData || [];
+
+    // Load categories
+    const { data: categoryData, error: categoryError } = await db
+      .from("categories")
+      .select("name")
+      .order("name");
+
+    if (categoryError) throw categoryError;
+
+    categories = [
+      "All",
+      ...(categoryData || []).map(item => item.name)
+    ];
+
+    // Load store settings
+    const { data: storeData, error: storeError } = await db
+      .from("store_settings")
+      .select("store_name, whatsapp_phone")
+      .eq("id", 1)
+      .maybeSingle();
+
+    if (storeError) throw storeError;
+
+    if (storeData) {
+      store = {
+        name: storeData.store_name || "ShopEasy",
+        phone: storeData.whatsapp_phone || ""
+      };
+    }
+
+    renderStoreInfo();
+    renderCategories();
+    renderProducts();
+
+  } catch (error) {
+    console.error("Supabase loading error:", error);
+
+    productGrid.innerHTML =
+      '<p class="empty-message">Unable to load products. Please try again later.</p>';
+  }
+}
+
 searchInput.addEventListener("input", renderProducts);
 
-renderStoreInfo();
-renderCategories();
-renderProducts();
+loadStore();
