@@ -1,0 +1,86 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ShopEasy | Owner Dashboard</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="navbar">
+    <a href="index.html" class="brand">ShopEasy Admin</a>
+    <a href="index.html">View Customer Website ↗</a>
+  </header>
+
+  <main class="admin-container">
+    <h1>Store Dashboard</h1>
+    <p>Manage your products, categories and store contact details.</p>
+
+    <section>
+      <h2>Store settings</h2>
+
+      <label for="storeNameInput">Store name</label>
+      <input id="storeNameInput" placeholder="Your store name">
+
+      <label for="phoneInput">WhatsApp number (with country code)</label>
+      <input id="phoneInput" placeholder="919999999999">
+
+      <button id="saveStoreButton">Save Store Settings</button>
+    </section>
+
+    <hr>
+
+    <section>
+      <h2>Manage categories</h2>
+
+      <label for="categoryInput">New category</label>
+      <input id="categoryInput" placeholder="Example: Shoes">
+
+      <button id="addCategoryButton">Add Category</button>
+
+      <div id="categoryManager"></div>
+    </section>
+
+    <hr>
+
+    <section>
+      <h2 id="formHeading">Add a product</h2>
+
+      <form id="productForm">
+        <input type="hidden" id="productId">
+
+        <label for="productName">Product name</label>
+        <input id="productName" required placeholder="Product name">
+
+        <label for="productPrice">Price (₹)</label>
+        <input id="productPrice" type="number" min="0" required>
+
+        <label for="productCategory">Category</label>
+        <select id="productCategory" required></select>
+
+        <label for="productImage">Product image URL</label>
+        <input id="productImage" type="url" placeholder="https://example.com/image.jpg">
+
+        <label for="productDescription">Description</label>
+        <textarea id="productDescription" rows="3"
+          placeholder="Write a short product description"></textarea>
+
+        <button type="submit">Save Product</button>
+        <button type="button" class="secondary-button" id="clearFormButton">
+          Clear Form
+        </button>
+      </form>
+    </section>
+
+    <hr>
+
+    <section>
+      <h2>Your products</h2>
+      <div id="productManager"></div>
+    </section>
+  </main>
+
+  <script src="admin.js"></script>
+</body>
+</html>
